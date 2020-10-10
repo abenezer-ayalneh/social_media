@@ -7,7 +7,7 @@
          FlutterApplication and put your custom class here. -->
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="social_media"
+        android:label="Social Media App"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
