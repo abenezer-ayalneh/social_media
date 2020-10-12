@@ -1,13 +1,18 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:social_media/pages/activity_feed.dart';
+import 'package:social_media/pages/create_account.dart';
 import 'package:social_media/pages/profile.dart';
 import 'package:social_media/pages/search.dart';
-import 'package:social_media/pages/timeline.dart';
 import 'package:social_media/pages/upload.dart';
+import '../models/user.dart';
 
 final GoogleSignIn googleSignIn = GoogleSignIn();
+final userRef = FirebaseFirestore.instance.collection('users');
+final timestamp = DateTime.now();
+User currentUser;
 
 class Home extends StatefulWidget {
   Home({Key key}) : super(key: key);
@@ -41,7 +46,7 @@ class _HomeState extends State<Home> {
 
   handleSignInAccount(GoogleSignInAccount account) {
     if (account != null) {
-      print('The user $account just signed in!');
+      createUserInFirestore();
       setState(() {
         isAuth = true;
       });
@@ -50,6 +55,29 @@ class _HomeState extends State<Home> {
         isAuth = false;
       });
     }
+  }
+
+  createUserInFirestore() async {
+    final user = googleSignIn.currentUser;
+    DocumentSnapshot documentSnapshot = await userRef.doc(user.id).get();
+
+    if (!documentSnapshot.exists) {
+      final username = await Navigator.push(
+          context, MaterialPageRoute(builder: (context) => CreateAccount()));
+      userRef.doc(user.id).set({
+        "id": user.id,
+        "username": username,
+        "photoUrl": user.photoUrl,
+        "displayName": user.displayName,
+        "email": user.email,
+        "bio": "",
+        "timestamp": timestamp,
+      });
+      documentSnapshot = await userRef.doc(user.id).get();
+    }
+    currentUser = User.fromDocument(documentSnapshot);
+    print(currentUser);
+    print(currentUser.username);
   }
 
   signIn() {
@@ -67,7 +95,8 @@ class _HomeState extends State<Home> {
   }
 
   onTap(int pageIndex) {
-    pageController.animateToPage(pageIndex,curve: Curves.bounceInOut, duration: Duration(milliseconds: 300));
+    pageController.animateToPage(pageIndex,
+        curve: Curves.bounceInOut, duration: Duration(milliseconds: 300));
   }
 
   @override
@@ -80,7 +109,11 @@ class _HomeState extends State<Home> {
     return Scaffold(
       body: PageView(
         children: [
-          Timeline(),
+          // Timeline(),
+          RaisedButton(
+            child: Text('Logout'),
+            onPressed: signOut,
+          ),
           ActivityFeed(),
           Upload(),
           Search(),
@@ -95,22 +128,17 @@ class _HomeState extends State<Home> {
         onTap: onTap,
         activeColor: Theme.of(context).primaryColor,
         items: [
+          BottomNavigationBarItem(icon: Icon(Icons.whatshot)),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications_active)),
           BottomNavigationBarItem(
-               icon: Icon(Icons.whatshot)),
-          BottomNavigationBarItem(
-               icon: Icon(Icons.notifications_active)),
-          BottomNavigationBarItem(
-              
               icon: Icon(
-                Icons.photo_camera,
-                size: 36.0,
-              )),
-          BottomNavigationBarItem( icon: Icon(Icons.search)),
-          BottomNavigationBarItem(
-               icon: Icon(Icons.account_circle)),
+            Icons.photo_camera,
+            size: 36.0,
+          )),
+          BottomNavigationBarItem(icon: Icon(Icons.search)),
+          BottomNavigationBarItem(icon: Icon(Icons.account_circle)),
         ],
       ),
-      
     );
   }
 
