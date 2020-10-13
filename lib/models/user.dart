@@ -15,7 +15,7 @@ class User {
       this.photoUrl,
       this.displayName,
       this.bio});
-
+//TODO Learn about the factory data type!
   factory User.fromDocument(DocumentSnapshot documentSnapshot) {
     return User(
       id: documentSnapshot["id"],

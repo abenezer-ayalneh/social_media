@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
-AppBar header(context, {bool isAppTitle: false, String titleText, bool removeBackButton = false}) {
+AppBar header(context, {bool isAppTitle: false, String titleText, bool applyDefaultBackButton = false, IconButton prefix, List<Widget> action}) {
   return AppBar(
-    automaticallyImplyLeading: removeBackButton,
+    leading: prefix,
+    
+    automaticallyImplyLeading: applyDefaultBackButton,
     title: Text(
       isAppTitle ? 'Social Media App' : titleText,
       style: TextStyle(
@@ -13,5 +15,6 @@ AppBar header(context, {bool isAppTitle: false, String titleText, bool removeBac
     ),
     centerTitle: true,
     backgroundColor: Theme.of(context).accentColor,
+    actions: action,
   );
 }

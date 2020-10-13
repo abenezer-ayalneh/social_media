@@ -42,6 +42,7 @@ class _HomeState extends State<Home> {
         .catchError((err) {
       print('Error signing silently: $err');
     });
+    //TODO correct the double signing at a time in here!
   }
 
   handleSignInAccount(GoogleSignInAccount account) {
@@ -115,7 +116,7 @@ class _HomeState extends State<Home> {
             onPressed: signOut,
           ),
           ActivityFeed(),
-          Upload(),
+          Upload(currentUser: currentUser),
           Search(),
           Profile(),
         ],
