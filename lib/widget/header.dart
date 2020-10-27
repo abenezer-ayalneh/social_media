@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
-AppBar header(context, {bool isAppTitle: false, String titleText, bool applyDefaultBackButton = false, IconButton prefix, List<Widget> action}) {
+AppBar header(context,
+    {bool isAppTitle: false,
+    String titleText,
+    bool applyDefaultBackButton = false,
+    IconButton prefix,
+    List<Widget> action}) {
+      
   return AppBar(
     leading: prefix,
-    
     automaticallyImplyLeading: applyDefaultBackButton,
     title: Text(
       isAppTitle ? 'Social Media App' : titleText,

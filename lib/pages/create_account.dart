@@ -51,7 +51,7 @@ class _CreateAccountState extends State<CreateAccount> {
                     key: _formKey,
                     child: TextFormField(
                       inputFormatters: [
-                        FilteringTextInputFormatter.deny(RegExp('[ ]')),
+                        FilteringTextInputFormatter.deny(RegExp('[ ]')),//TODO The white spaces are still on the textfield. When backspace is pressed it will recognize them!
                       ],
                       validator: (val) {
                         if (val.trim().length < 3) {
