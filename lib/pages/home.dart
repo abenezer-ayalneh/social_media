@@ -8,7 +8,7 @@ import 'package:social_media/pages/create_account.dart';
 import 'package:social_media/pages/profile.dart';
 import 'package:social_media/pages/search.dart';
 import 'package:social_media/pages/upload.dart';
-import '../models/user.dart';
+import 'package:social_media/models/user.dart';
 import 'package:data_connection_checker/data_connection_checker.dart';
 
 final GoogleSignIn googleSignIn = GoogleSignIn();
@@ -16,6 +16,9 @@ final StorageReference storageRef = FirebaseStorage.instance.ref();
 final userRef = FirebaseFirestore.instance.collection('users');
 final postRef = FirebaseFirestore.instance.collection('users');
 final commentRef = FirebaseFirestore.instance.collection('comments');
+final feedRef = FirebaseFirestore.instance.collection('feed');
+final followerRef = FirebaseFirestore.instance.collection('followers');
+final followingRef = FirebaseFirestore.instance.collection('following');
 final timestamp = DateTime.now();
 User currentUser;
 
@@ -27,8 +30,8 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  final _unAuthScaffoldKey = GlobalKey<ScaffoldState>();
   bool isAuth = false;
-  bool isConnected = false;
   PageController pageController;
   int pageIndex = 0;
 
@@ -36,65 +39,53 @@ class _HomeState extends State<Home> {
   void initState() {
     super.initState();
     pageController = PageController();
-    checkConnectivity();
     tryToSignIn();
     //TODO correct the double signing at a time in here!
   }
 
-  checkConnectivity() async {
+  Future<bool> checkConnectivity() async {
     bool result = await DataConnectionChecker().hasConnection;
     if (result == true) {
       print('Working Connection Available!');
     } else {
       print('No internet :( Reason:${DataConnectionChecker().lastTryResults}');
     }
-    setState(() {
-      isConnected = result;
-    });
+    return result;
   }
 
-  displayNoConnection() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text("No Internet Connection Was Detected! Please Try Again!"),
-          actions: <Widget>[
-            SimpleDialogOption(
-              child: RaisedButton(
-                color: Theme.of(context).accentColor,
-                child: Text("Close"),
-                onPressed: () => {Navigator.pop(context)},
-              ),
-              // padding: EdgeInsets.only(left: 50.0),
-            ),
-          ],
-        );
-      },
+  showCustomErrorSnackBar(String text, Color color) {
+    SnackBar snackBar = SnackBar(
+      content: Text(
+        text,
+        style: TextStyle(fontSize: 17, fontFamily: 'Maiandra'),
+      ),
+      backgroundColor: color,
+      duration: Duration(milliseconds: 1500),
     );
+    _unAuthScaffoldKey.currentState.showSnackBar(snackBar);
   }
 
   tryToSignIn() {
-      googleSignIn.onCurrentUserChanged.listen((account) {
-        handleSignInAccount(account);
-      }, onError: (err) {
-        print('Error Signing In: $err');
-      });
+    googleSignIn.onCurrentUserChanged.listen((account) {
+      handleSignInAccount(account);
+    }, onError: (err) {
+      print('Error Signing In: $err');
+    });
 
-      googleSignIn
-          .signInSilently(suppressErrors: false)
-          .then((account) => handleSignInAccount(account))
-          .catchError((err) {
-        print('Error signing silently: $err');
-      });
+    googleSignIn
+        .signInSilently(suppressErrors: false)
+        .then((account) => handleSignInAccount(account))
+        .catchError((err) {
+      print('Error signing silently: $err');
+    });
   }
 
-  handleSignInAccount(GoogleSignInAccount account) {
+  handleSignInAccount(GoogleSignInAccount account) async{
     if (account != null) {
-      createUserInFirestore();
       setState(() {
         isAuth = true;
       });
+      await createUserInFirestore();
     } else {
       setState(() {
         isAuth = false;
@@ -122,15 +113,21 @@ class _HomeState extends State<Home> {
     }
     currentUser = User.fromDocument(documentSnapshot);
     print(currentUser);
-    print(currentUser.username);
+    print(currentUser.username + " Just logged in!");
   }
 
-  signIn() {
-    googleSignIn.signIn();
+  signIn() async{
+    bool isConnected = await checkConnectivity();
+    if (!isConnected) {
+      showCustomErrorSnackBar("No connection was detected!", Colors.red);
+    } else {
+      googleSignIn.signIn();
+    }
   }
 
   signOut() {
     googleSignIn.signOut();
+    print("user logged out successfully");
   }
 
   onPageChanged(int pageIndex) {
@@ -189,47 +186,49 @@ class _HomeState extends State<Home> {
 
   Scaffold buildUnAuthScreen() {
     return Scaffold(
+        key: _unAuthScaffoldKey,
         body: Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [
-            Theme.of(context).primaryColor,
-            Theme.of(context).accentColor,
-          ],
-        ),
-      ),
-      alignment: Alignment.center,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            'SocialMediaApp',
-            style: TextStyle(
-                fontFamily: 'Signatra', fontSize: 90, color: Colors.white),
-          ),
-          GestureDetector(
-            onTap: signIn,
-            child: Container(
-              width: 260.0,
-              height: 60.0,
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/images/google_signin_button.png'),
-                  fit: BoxFit.cover,
-                ),
-              ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: [
+                Theme.of(context).primaryColor,
+                Theme.of(context).accentColor,
+              ],
             ),
           ),
-          RaisedButton(
-            onPressed: signOut,
-            child: Text("Logout"),
-          )
-        ],
-      ),
-    ));
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'SocialMediaApp',
+                style: TextStyle(
+                    fontFamily: 'Signatra', fontSize: 90, color: Colors.white),
+              ),
+              GestureDetector(
+                onTap: signIn,
+                child: Container(
+                  width: 260.0,
+                  height: 60.0,
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image:
+                          AssetImage('assets/images/google_signin_button.png'),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+              RaisedButton(
+                onPressed: signOut,
+                child: Text("Logout"),
+              )
+            ],
+          ),
+        ));
   }
 
   @override

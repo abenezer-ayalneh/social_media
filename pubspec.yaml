@@ -43,6 +43,7 @@ dependencies:
   geocoder: ^0.2.1
   data_connection_checker: ^0.3.4
   animator: ^2.0.1
+  timeago: ^2.0.28
 
 flutter_icons:
   android: true

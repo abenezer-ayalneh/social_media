@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:social_media/models/user.dart';
+import 'package:social_media/pages/activity_feed.dart';
 import 'package:social_media/pages/comments.dart';
 import 'package:social_media/pages/home.dart';
 import 'package:social_media/widget/custom_image.dart';
@@ -110,7 +111,7 @@ class _PostState extends State<Post> {
                 fontSize: 15.0,
               ),
             ),
-            onTap: () => print("Go to post owner's page"),
+            onTap: () => showProfile(context, profileId: ownerId),
           ),
           subtitle: Text(
             location,
@@ -228,6 +229,7 @@ class _PostState extends State<Post> {
           .collection("userPost")
           .doc(postId)
           .update({"likes.$currentUserId": false});
+      removeLikeFromActivityFeed();
       setState(() {
         isLiked = false;
         likeCount -= 1;
@@ -239,6 +241,7 @@ class _PostState extends State<Post> {
           .collection("userPost")
           .doc(postId)
           .update({"likes.$currentUserId": true});
+      addLikeToActicityFeed();
       setState(() {
         isLiked = true;
         likeCount += 1;
@@ -249,6 +252,39 @@ class _PostState extends State<Post> {
         setState(() {
           showHeart = false;
         });
+      });
+    }
+  }
+
+  addLikeToActicityFeed() {
+    bool isNotPostOwner = currentUserId != ownerId;
+    if (isNotPostOwner) {
+      feedRef.doc(ownerId).collection("feedItems").doc(postId).set({
+        "username": currentUser.username,
+        "type": "like",
+        "userId": currentUser.id,
+        "userProfileImg": currentUser.photoUrl,
+        "postId": postId,
+        "mediaUrl": mediaUrl,
+        "timeStamp": timestamp,
+      });
+    }
+  }
+
+  removeLikeFromActivityFeed() {
+    bool isNotPostOwner = currentUserId != ownerId;
+    if (isNotPostOwner) {
+      feedRef
+          .doc(ownerId)
+          .collection("feedItems")
+          .doc(postId)
+          .get()
+          .then((value) {
+        if (value.exists) {
+          value.reference.delete();
+        } else {
+          print("The document you were trying to delete doesn't exist!");
+        }
       });
     }
   }

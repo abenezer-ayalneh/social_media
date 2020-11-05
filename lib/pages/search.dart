@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:social_media/models/user.dart';
+import 'package:social_media/pages/activity_feed.dart';
 import 'package:social_media/pages/home.dart';
 import 'package:social_media/widget/progress.dart';
 
@@ -124,7 +125,7 @@ class UserResult extends StatelessWidget {
           ListTile(
             tileColor: Colors.white10, 
             onTap: () {
-              print("tapped on list Tile");
+              showProfile(context, profileId: user.id);
             },
             leading: CircleAvatar(
               backgroundColor: Colors.white10,
