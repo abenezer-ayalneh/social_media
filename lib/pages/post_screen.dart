@@ -12,20 +12,35 @@ class PostScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: postRef.doc(userId).collection("userPost").doc(postId).get(),
+      future: postRef
+          .doc(userId)
+          .collection("userPost")
+          .doc(postId)
+          .get(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return circularProgress(context);
+          return Center(
+            child: Scaffold(
+              appBar: header(context,
+                  applyDefaultBackButton: true, titleText: "Fetching data..."),
+              body: ListView(
+                children: [circularProgress(context)],
+              ),
+            ),
+          );
         }
         Post post = Post.fromDocument(snapshot.data);
         return Center(
           child: Scaffold(
-            appBar: header(context, titleText: post.description,applyDefaultBackButton: true),
-            body: ListView(children: [
-              Container(
-                child: post,
-              ),
-            ],),
+            appBar: header(context,
+                titleText: post.description, applyDefaultBackButton: true),
+            body: ListView(
+              children: [
+                Container(
+                  child: post,
+                ),
+              ],
+            ),
           ),
         );
       },

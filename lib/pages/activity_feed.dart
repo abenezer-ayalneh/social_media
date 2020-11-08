@@ -41,11 +41,12 @@ class _ActivityFeedState extends State<ActivityFeed> {
           future: getActivityFeed(),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
-              print(snapshot.data);
               return circularProgress(context);
+            }else if (snapshot.hasData) {
+              print("Snapshot for feed: ${snapshot.data}");
             }
             return ListView(
-              children: snapshot.data,
+              children: snapshot.data == []? Text("No Avtivity Feed yet!"):snapshot.data,
             );
           },
         ),
@@ -81,13 +82,13 @@ class ActivityFeedItem extends StatelessWidget {
   factory ActivityFeedItem.fromDocument(DocumentSnapshot doc) {
     return ActivityFeedItem(
       username: doc['username'],
+      userProfileImg: doc['userProfileImg'],
       userId: doc['userId'],
       type: doc['type'],
-      postId: doc['postId'],
-      userProfileImg: doc['userProfileImg'],
+      postId: doc['type'] == "follow" ? null : doc['postId'],
       commentData: doc['type'] == "comment" ? doc['commentData'] : "",
       timestamp: doc['timeStamp'],
-      mediaUrl: doc['mediaUrl'],
+      mediaUrl: doc['type'] == "follow" ? null : doc['mediaUrl'],
     );
   }
 
@@ -97,7 +98,7 @@ class ActivityFeedItem extends StatelessWidget {
       MaterialPageRoute(
         builder: (context) => PostScreen(
           postId: postId,
-          userId: userId,
+          userId: currentUser.id,
         ),
       ),
     );

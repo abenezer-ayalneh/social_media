@@ -12,7 +12,7 @@ class Search extends StatefulWidget {
   _SearchState createState() => _SearchState();
 }
 
-class _SearchState extends State<Search> {
+class _SearchState extends State<Search> with AutomaticKeepAliveClientMixin<Search> {
   Future<QuerySnapshot> searchResultsFuture;
   TextEditingController searchController = TextEditingController();
 
@@ -55,6 +55,7 @@ class _SearchState extends State<Search> {
     return AppBar(
       backgroundColor: Theme.of(context).primaryColor,
       title: TextFormField(
+        textCapitalization: TextCapitalization.sentences,
         controller: searchController,
         decoration: InputDecoration(
           fillColor: Colors.white,
@@ -101,8 +102,12 @@ class _SearchState extends State<Search> {
     );
   }
 
+  bool get wantKeepAlive => true;
+
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     return Scaffold(
       backgroundColor: Colors.white54,
       appBar: buildSearchField(),
@@ -123,7 +128,7 @@ class UserResult extends StatelessWidget {
       child: Column(
         children: [
           ListTile(
-            tileColor: Colors.white10, 
+            tileColor: Colors.white54, 
             onTap: () {
               showProfile(context, profileId: user.id);
             },
@@ -138,7 +143,6 @@ class UserResult extends StatelessWidget {
             ),
             subtitle: Text(
               "@" + user.username,
-              
             ),
           ),
           Divider(

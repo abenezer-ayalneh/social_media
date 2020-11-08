@@ -98,6 +98,7 @@ class _PostState extends State<Post> {
           return circularProgress(context);
         }
         User user = User.fromDocument(snapshot.data);
+        bool isPostOwner = currentUserId == ownerId;
         return ListTile(
           leading: CircleAvatar(
             backgroundColor: Colors.grey,
@@ -117,13 +118,78 @@ class _PostState extends State<Post> {
             location,
             style: TextStyle(color: Colors.grey),
           ),
-          trailing: IconButton(
-            icon: Icon(Icons.more_vert),
-            onPressed: () => print('Delete button pressed!'),
-          ),
+          trailing: isPostOwner
+              ? IconButton(
+                  icon: Icon(Icons.delete),
+                  onPressed: () => handleDeletePost(context),
+                )
+              : Text(""),
         );
       },
     );
+  }
+
+  handleDeletePost(BuildContext parentContext) {
+    return showDialog(
+      context: parentContext,
+      builder: ((context) {
+        return SimpleDialog(
+          title: Text("Are you sure?"),
+          children: [
+            SimpleDialogOption(
+              child: Text(
+                "Yes",
+                style: TextStyle(color: Colors.red),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                deletePost(parentContext);
+              },
+            ),
+            SimpleDialogOption(
+              child: Text("Cancel"),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+
+  deletePost(BuildContext parentContext) async {
+    //deleting the post from the userPost collection
+    postRef
+        .doc(currentUser.id)
+        .collection('userPost')
+        .doc(postId)
+        .get()
+        .then((post) => {
+              if (post.exists) {post.reference.delete()}
+            });
+
+    //deleting the post from the firestore
+    storageRef.child("post_$postId.jpg").delete();
+
+    //deleting all activity feeds related to that post
+    feedRef
+        .doc(currentUserId)
+        .collection("feedItems")
+        .where("postId", isEqualTo: postId)
+        .get()
+        .then((snapshot) => {
+              snapshot.docs.forEach((doc) {
+                if (doc.exists) {
+                  doc.reference.delete();
+                }
+              })
+            });
+    
+    //deleting all the comments related to the post
+    commentRef.doc(postId).get().then((value) => {
+      if(value.exists){
+        value.reference.delete()
+      }
+    });
   }
 
   buildPostImage() {

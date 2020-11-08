@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +10,7 @@ import 'package:social_media/pages/activity_feed.dart';
 import 'package:social_media/pages/create_account.dart';
 import 'package:social_media/pages/profile.dart';
 import 'package:social_media/pages/search.dart';
+import 'package:social_media/pages/timeline.dart';
 import 'package:social_media/pages/upload.dart';
 import 'package:social_media/models/user.dart';
 import 'package:data_connection_checker/data_connection_checker.dart';
@@ -19,6 +23,7 @@ final commentRef = FirebaseFirestore.instance.collection('comments');
 final feedRef = FirebaseFirestore.instance.collection('feed');
 final followerRef = FirebaseFirestore.instance.collection('followers');
 final followingRef = FirebaseFirestore.instance.collection('following');
+final timelineRef = FirebaseFirestore.instance.collection('timeline');
 final timestamp = DateTime.now();
 User currentUser;
 
@@ -31,6 +36,8 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   final _unAuthScaffoldKey = GlobalKey<ScaffoldState>();
+  final _mainScaffoldKey = GlobalKey<ScaffoldState>();
+  FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
   bool isAuth = false;
   PageController pageController;
   int pageIndex = 0;
@@ -80,17 +87,61 @@ class _HomeState extends State<Home> {
     });
   }
 
-  handleSignInAccount(GoogleSignInAccount account) async{
+  handleSignInAccount(GoogleSignInAccount account) async {
     if (account != null) {
+      await createUserInFirestore();
       setState(() {
         isAuth = true;
       });
-      await createUserInFirestore();
+      configurePushNotifications();
     } else {
       setState(() {
         isAuth = false;
       });
     }
+  }
+
+  configurePushNotifications() {
+    final GoogleSignInAccount user = googleSignIn.currentUser;
+    if (Platform.isIOS) getIosPermission();
+    _firebaseMessaging.getToken().then((token) {
+      print("Firebase Messaging Token: $token");
+      userRef.doc(user.id).update({
+        "androidNotificationToken": token,
+      });
+    });
+
+    _firebaseMessaging.configure(
+        //While the user isn't using the app
+        // onLaunch:
+        //While the app is on the background
+        // onResume:
+        //Triggered while the user is actively using the app
+        onMessage: (Map<String, dynamic> message) async {
+      print('Message: $message');
+      final recipientId = message['data']['recipient'];
+      final body = message['notification']['body'];
+
+      if (recipientId == user.id) {
+        print('Notification shown!');
+        SnackBar snackBar = SnackBar(
+          content: Text(
+            body,
+            overflow: TextOverflow.ellipsis,
+          ),
+        );
+        _mainScaffoldKey.currentState.showSnackBar(snackBar);
+      }
+    });
+  }
+
+  getIosPermission() {
+    _firebaseMessaging.requestNotificationPermissions(
+      IosNotificationSettings(alert: true, badge: true, sound: true),
+    );
+    _firebaseMessaging.onIosSettingsRegistered.listen((event) {
+      print("Settings Registered: $event");
+    });
   }
 
   createUserInFirestore() async {
@@ -116,7 +167,7 @@ class _HomeState extends State<Home> {
     print(currentUser.username + " Just logged in!");
   }
 
-  signIn() async{
+  signIn() async {
     bool isConnected = await checkConnectivity();
     if (!isConnected) {
       showCustomErrorSnackBar("No connection was detected!", Colors.red);
@@ -149,13 +200,10 @@ class _HomeState extends State<Home> {
 
   Widget buildAuthScreen() {
     return Scaffold(
+      key: _mainScaffoldKey,
       body: PageView(
         children: [
-          // Timeline(),
-          RaisedButton(
-            child: Text('Logout'),
-            onPressed: signOut,
-          ),
+          Timeline(currentUser: currentUser),
           ActivityFeed(),
           Upload(currentUser: currentUser),
           Search(),

@@ -42,3 +42,5 @@ app.*.map.json
 
 # Exceptions to above rules.
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+
+D:\Misc\A - Tutorial\[FreeCourseSite.com] Udemy - Build a Social Network with Flutter and Firebase\Social Media App Project\social_media\android\key.properties
